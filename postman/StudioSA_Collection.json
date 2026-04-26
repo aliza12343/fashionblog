@@ -1,0 +1,682 @@
+{
+  "info": {
+    "name": "Studio SA — fashionblog API",
+    "description": "SBA-307 complete endpoint test suite. Import this file into Postman, then run the Auth folder first so the token variable is set automatically.",
+    "_postman_id": "sba-307-fashionblog",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",    "value": "http://localhost:8081/api", "type": "string" },
+    { "key": "token",      "value": "",                          "type": "string" },
+    { "key": "adminToken", "value": "",                          "type": "string" },
+    { "key": "postId",     "value": "1",                         "type": "string" },
+    { "key": "orderId",    "value": "1",                         "type": "string" },
+    { "key": "userId",     "value": "1",                         "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "Auth",
+      "item": [
+
+        {
+          "name": "Register — new user",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"email\": \"testuser@example.com\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('Response has message field', () => {",
+                "  const body = pm.response.json();",
+                "  pm.expect(body).to.have.property('message');",
+                "  pm.expect(body.message).to.include('registered');",
+                "});",
+                "pm.test('Response has username field', () => {",
+                "  pm.expect(pm.response.json()).to.have.property('username');",
+                "});"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "Register — duplicate username (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"email\": \"other@example.com\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 400 Bad Request for duplicate username', () => pm.response.to.have.status(400));",
+                "pm.test('Response has error field', () => {",
+                "  pm.expect(pm.response.json()).to.have.property('error');",
+                "});"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "Register — missing required fields (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"ab\",\n  \"password\": \"\",\n  \"email\": \"not-an-email\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 400 for validation failure', () => pm.response.to.have.status(400));"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "Login — valid credentials",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                "pm.test('Response contains token', () => {",
+                "  const body = pm.response.json();",
+                "  pm.expect(body).to.have.property('token');",
+                "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+                "});",
+                "pm.test('Response contains username and role', () => {",
+                "  const body = pm.response.json();",
+                "  pm.expect(body).to.have.property('username');",
+                "  pm.expect(body).to.have.property('role');",
+                "});",
+                "pm.test('Token is a valid JWT (3 parts)', () => {",
+                "  const token = pm.response.json().token;",
+                "  pm.expect(token.split('.')).to.have.lengthOf(3);",
+                "});",
+                "// Save token for subsequent requests",
+                "const token = pm.response.json().token;",
+                "pm.collectionVariables.set('token', token);"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "Login — wrong password (expect 401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"wrongpassword\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 401 for bad credentials', () => pm.response.to.have.status(401));"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "Login — admin user (save adminToken)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"adminpassword\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "// Only saves if the admin account exists",
+                "if (pm.response.code === 200) {",
+                "  pm.collectionVariables.set('adminToken', pm.response.json().token);",
+                "  pm.test('Admin login successful', () => pm.response.to.have.status(200));",
+                "} else {",
+                "  console.warn('Admin account not found — create one first via /api/auth/register with an admin seed script');",
+                "}"
+              ]
+            }
+          }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "Posts",
+      "item": [
+
+        {
+          "name": "GET all posts — authenticated",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/posts", "host": ["{{baseUrl}}"], "path": ["posts"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Response is an array', () => {",
+                "  pm.expect(pm.response.json()).to.be.an('array');",
+                "});",
+                "pm.test('Response time under 2000ms', () => pm.expect(pm.response.responseTime).to.be.below(2000));"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "GET all posts — no token (expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/posts", "host": ["{{baseUrl}}"], "path": ["posts"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 401 without token', () => pm.response.to.have.status(401));"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "GET all posts — invalid token (expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer invalid.token.here" }],
+            "url": { "raw": "{{baseUrl}}/posts", "host": ["{{baseUrl}}"], "path": ["posts"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 401 for invalid token', () => pm.response.to.have.status(401));",
+                "pm.test('Response has error field', () => {",
+                "  pm.expect(pm.response.json()).to.have.property('error');",
+                "});"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "POST create post — authenticated",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/posts/add", "host": ["{{baseUrl}}"], "path": ["posts","add"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Scarlet Silk Lehenga\",\n  \"content\": \"A handcrafted bridal lehenga in deep scarlet raw silk with gold zardozi embroidery.\",\n  \"category\": \"Bridal\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('Response has id field', () => {",
+                "  const body = pm.response.json();",
+                "  pm.expect(body).to.have.property('id');",
+                "});",
+                "pm.test('Response has correct title', () => {",
+                "  pm.expect(pm.response.json().title).to.eql('Scarlet Silk Lehenga');",
+                "});",
+                "pm.test('Response has user object (not null)', () => {",
+                "  pm.expect(pm.response.json().user).to.not.be.null;",
+                "});",
+                "// Save postId for admin delete test",
+                "pm.collectionVariables.set('postId', pm.response.json().id);"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "POST create post — missing title (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/posts/add", "host": ["{{baseUrl}}"], "path": ["posts","add"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"content\": \"Some content\",\n  \"category\": \"Pret\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 400 for missing title', () => pm.response.to.have.status(400));"
+              ]
+            }
+          }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "Admin",
+      "item": [
+
+        {
+          "name": "DELETE post — admin token",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin","posts","{{postId}}"]
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 200 OK for admin delete', () => pm.response.to.have.status(200));",
+                "pm.test('Response confirms deletion', () => {",
+                "  pm.expect(pm.response.text()).to.include('deleted');",
+                "});"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "DELETE post — user token (expect 403)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin","posts","{{postId}}"]
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 403 for non-admin user', () => pm.response.to.have.status(403));"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "DELETE post — not found (expect 404)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/posts/99999",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin","posts","99999"]
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 404 for missing post', () => pm.response.to.have.status(404));"
+              ]
+            }
+          }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "Orders",
+      "item": [
+
+        {
+          "name": "POST create order — guest (no token)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/orders", "host": ["{{baseUrl}}"], "path": ["orders"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"email\": \"jane@example.com\",\n  \"phone\": \"614-555-0192\",\n  \"address\": \"123 Short North Ave\",\n  \"city\": \"Columbus\",\n  \"state\": \"OH\",\n  \"zip\": \"43215\",\n  \"country\": \"United States\",\n  \"total\": 3400.00\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+                "pm.test('Response has orderNumber', () => {",
+                "  const body = pm.response.json();",
+                "  pm.expect(body).to.have.property('orderNumber');",
+                "  pm.expect(body.orderNumber).to.match(/^SA-\\d+$/);",
+                "});",
+                "pm.test('Response has status PENDING', () => {",
+                "  pm.expect(pm.response.json().status).to.eql('PENDING');",
+                "});",
+                "pm.test('Response has id', () => {",
+                "  pm.expect(pm.response.json()).to.have.property('id');",
+                "});",
+                "pm.collectionVariables.set('orderId', pm.response.json().id);"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "POST create order — missing required fields (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/orders", "host": ["{{baseUrl}}"], "path": ["orders"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"\",\n  \"lastName\": \"\",\n  \"email\": \"not-an-email\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 400 for invalid order data', () => pm.response.to.have.status(400));"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "GET all orders — admin only",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/orders", "host": ["{{baseUrl}}"], "path": ["orders"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Response is an array', () => {",
+                "  pm.expect(pm.response.json()).to.be.an('array');",
+                "});"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "GET all orders — user token (expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/orders", "host": ["{{baseUrl}}"], "path": ["orders"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 403 for non-admin', () => pm.response.to.have.status(403));"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "GET order by ID — authenticated",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders","{{orderId}}"]
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Response has correct id', () => {",
+                "  pm.expect(pm.response.json()).to.have.property('id');",
+                "});"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "GET order by ID — not found (expect 404)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/orders/99999",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders","99999"]
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 404 for missing order', () => pm.response.to.have.status(404));"
+              ]
+            }
+          }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "Contact",
+      "item": [
+
+        {
+          "name": "POST submit inquiry — valid",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/contact", "host": ["{{baseUrl}}"], "path": ["contact"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Aliza\",\n  \"lastName\": \"Rai\",\n  \"email\": \"aliza@example.com\",\n  \"phone\": \"614-555-0100\",\n  \"service\": \"Bridal Couture\",\n  \"message\": \"I am interested in a full bridal lehenga set for my wedding in June.\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                "pm.test('Response has message field', () => {",
+                "  pm.expect(pm.response.json()).to.have.property('message');",
+                "});",
+                "pm.test('Message includes first name', () => {",
+                "  pm.expect(pm.response.json().message).to.include('Aliza');",
+                "});"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "POST submit inquiry — missing required fields (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/contact", "host": ["{{baseUrl}}"], "path": ["contact"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"\",\n  \"email\": \"bad-email\",\n  \"service\": \"\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 400 for invalid contact data', () => pm.response.to.have.status(400));"
+              ]
+            }
+          }]
+        }
+
+      ]
+    },
+
+    {
+      "name": "Users (Admin)",
+      "item": [
+
+        {
+          "name": "GET all users — admin token",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Response is an array', () => {",
+                "  pm.expect(pm.response.json()).to.be.an('array');",
+                "});",
+                "pm.test('Each user has id, username, email, role', () => {",
+                "  const users = pm.response.json();",
+                "  if (users.length > 0) {",
+                "    pm.expect(users[0]).to.have.all.keys('id','username','email','role');",
+                "  }",
+                "});",
+                "// Save a userId for the get-by-id test",
+                "const users = pm.response.json();",
+                "if (users.length > 0) pm.collectionVariables.set('userId', users[0].id);"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "GET all users — user token (expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 403 for non-admin', () => pm.response.to.have.status(403));"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "GET user by ID — admin token",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users","{{userId}}"]
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                "pm.test('Response has username and role', () => {",
+                "  const body = pm.response.json();",
+                "  pm.expect(body).to.have.property('username');",
+                "  pm.expect(body).to.have.property('role');",
+                "});"
+              ]
+            }
+          }]
+        },
+
+        {
+          "name": "GET user by ID — not found (expect 404)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/99999",
+              "host": ["{{baseUrl}}"],
+              "path": ["users","99999"]
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Status is 404 for missing user', () => pm.response.to.have.status(404));"
+              ]
+            }
+          }]
+        }
+
+      ]
+    }
+
+  ]
+}
