@@ -72,25 +72,31 @@
 │     email         VARCHAR(100)  NN  │◄── UNIQUE
 │     role          ENUM('USER',      │
 │                   'ADMIN')      NN  │
-└──────────────────┬──────────────────┘
-                   │ 1
-                   │
-                   │ has many
-                   │
-                   │ N
-┌──────────────────▼──────────────────┐
-│               posts                 │
-├─────────────────────────────────────┤
-│ PK  id            BIGINT  NOT NULL  │
-│     title         VARCHAR(200)  NN  │
-│     content       TEXT         NN  │
-│     image_url     VARCHAR(500)      │
-│     price         DOUBLE           │
-│     category      VARCHAR(100)  NN  │
-│     stock_qty     INT  DEFAULT 0    │
-│     created_at    DATETIME      NN  │
-│ FK  user_id       BIGINT       NN  │──▶ users.id  ON DELETE CASCADE
-└─────────────────────────────────────┘
+└──────────┬───────────────┬──────────┘
+           │ 1             │ 1
+           │               │
+     has many         has many (optional)
+           │               │
+           │ N             │ N
+┌──────────▼──────────┐  ┌─▼───────────────────────────────────┐
+│        posts        │  │               orders                │
+├─────────────────────┤  ├─────────────────────────────────────┤
+│ PK id   BIGINT  NN  │  │ PK  id             BIGINT  NOT NULL │
+│    title  V(200) NN │  │     customer_name  VARCHAR(200)  NN │
+│    content TEXT  NN │  │     email          VARCHAR(100)  NN │
+│    image_url V(500) │  │     phone          VARCHAR(30)      │
+│    price  DOUBLE    │  │     shipping_addr  VARCHAR(255)  NN │
+│    category V(100)  │  │     city           VARCHAR(100)  NN │
+│    stock_qty INT    │  │     state          VARCHAR(50)      │
+│    created_at DT NN │  │     zip            VARCHAR(20)   NN │
+│ FK user_id  BIGINT  │  │     country        VARCHAR(100)  NN │
+│    ──▶ users.id     │  │     total          DOUBLE           │
+│    ON DELETE CASCADE│  │     status         VARCHAR(20)   NN │
+└─────────────────────┘  │     created_at     DATETIME      NN │
+                         │ FK  user_id        BIGINT  NULL     │
+                         │     ──▶ users.id (nullable —        │
+                         │         guest checkout allowed)     │
+                         └─────────────────────────────────────┘
 
 Indexes:
   idx_posts_category    posts(category)
@@ -100,7 +106,8 @@ Indexes:
 ```
 
 **Relationships:**
-- `users` → `posts`: One-to-Many (one user can own many posts).
+- `users` → `posts`: One-to-Many (one user owns many posts). Cascade delete.
+- `users` → `orders`: One-to-Many, nullable FK (guest checkout sets user_id = NULL).
 - Deleting a user cascades to delete all their posts (`ON DELETE CASCADE`).
 
 ---
