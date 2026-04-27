@@ -8,6 +8,7 @@
 
 USE fashion_db;
 
+-- NOSONAR: BCrypt hashes below are test-only seed data, not real credentials
 INSERT INTO users (username, password, email, role) VALUES
 ('admin',       '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin@fashionblog.com',    'ADMIN'),
 ('jane_doe',    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'jane@fashionblog.com',     'USER'),
