@@ -1,10 +1,12 @@
 package org.example.capstone2;
 
+import org.example.capstone2.jwt.JwtAuthFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.example.capstone2.controller.ContactController;
@@ -17,6 +19,9 @@ class ContactControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private JwtAuthFilter jwtAuthFilter;
 
     @Test
     void submitInquiry_ShouldReturn200_WhenValidRequest() throws Exception {

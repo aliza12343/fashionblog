@@ -3,6 +3,7 @@ package org.example.capstone2;
 import org.example.capstone2.controller.AuthController;
 import org.example.capstone2.entity.User;
 import org.example.capstone2.entity.UserRole;
+import org.example.capstone2.jwt.JwtAuthFilter;
 import org.example.capstone2.jwt.JwtUtil;
 import org.example.capstone2.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ class AuthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private JwtAuthFilter jwtAuthFilter;
 
     @MockBean
     private AuthenticationManager authenticationManager;

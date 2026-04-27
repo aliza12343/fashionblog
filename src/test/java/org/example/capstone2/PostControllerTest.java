@@ -5,6 +5,7 @@ import org.example.capstone2.controller.PostController;
 import org.example.capstone2.entity.Post;
 import org.example.capstone2.entity.User;
 import org.example.capstone2.entity.UserRole;
+import org.example.capstone2.jwt.JwtAuthFilter;
 import org.example.capstone2.service.PostService;
 import org.example.capstone2.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,9 @@ class PostControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockBean
+    private JwtAuthFilter jwtAuthFilter;
 
     @MockBean
     private PostService postService;
