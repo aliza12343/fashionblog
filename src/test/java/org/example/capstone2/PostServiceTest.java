@@ -9,13 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,14 +41,13 @@ class PostServiceTest {
     }
 
     @Test
-    void getAllPosts_ShouldReturnPagedList() {
+    void getAllPosts_ShouldReturnList() {
         Post p1 = new Post();
         p1.setTitle("Post 1");
         Post p2 = new Post();
         p2.setTitle("Post 2");
 
-        when(postRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(p1, p2)));
+        when(postRepository.findTop20WithUser()).thenReturn(List.of(p1, p2));
 
         List<Post> result = postService.getAllPosts();
 
@@ -61,8 +57,7 @@ class PostServiceTest {
 
     @Test
     void getAllPosts_ShouldReturnEmptyList_WhenNoPosts() {
-        when(postRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+        when(postRepository.findTop20WithUser()).thenReturn(List.of());
 
         List<Post> result = postService.getAllPosts();
 
