@@ -3,7 +3,6 @@ package org.example.capstone2.service;
 import exception.ResourceNotFoundException;
 import org.example.capstone2.entity.Post;
 import org.example.capstone2.repository.PostRepository;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +22,9 @@ public class PostService {
         return postRepository.save(post);
     }
 
+    @Transactional(readOnly = true)
     public List<Post> getAllPosts() {
-        return postRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 20)).getContent();
+        return postRepository.findTop20WithUser();
     }
 
     @Transactional
